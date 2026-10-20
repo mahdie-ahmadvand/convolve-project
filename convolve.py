@@ -1,10 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import cv2
 from PIL import Image
 import argparse
 import sys
 import os
-
+import time
 
 
 def convolve2d_gray(image , kernel):    
@@ -31,6 +32,26 @@ def convolve2d_gray(image , kernel):
             region = padded [row:row + 3 , col:col +3]
             output[row ,col] = np.sum(region * flipped_kernel)
     return output.astype(np.uint8) 
+
+def compare_with_opencv(img_path,kernel_name , kernel_array):
+    img = cv2.imread(img_path,cv2.IMREAD_GRAYSCALE)
+    img_float = img.astype(np.float64)
+
+
+    start_time = time.time()
+    my_result = convolve2d_gray(img_float,kernel_array)
+    my_time = time.time() - start_time
+
+    start_time = time.time()
+    cv_result = cv2.filter2D(img_float, ddepth=-1, kernel=kernel_array)
+    cv_time = time.time() - start_time
+    max_diff = np.max(np.abs(my_result - cv_result))
+
+    print(f"--- نتیجه مقایسه برای کرنل: {kernel_name} ---")
+    print(f"بیشترین اختلاف عددی: {max_diff}")
+    print(f"زمان تابع شما: {my_time:.5f} ثانیه")
+    print(f"زمان OpenCV: {cv_time:.5f} ثانیه")
+    print("-" * 40)
 
 
 
@@ -83,10 +104,15 @@ def main():
         v = convolve2d_gray(img_array , kernel_library["sobel_v"]) 
         result = np.sqrt(h**2 + v**2)
 
+        compare_with_opencv(args.input,"sobel_h",kernel_library["sobel_h"])
+        compare_with_opencv(args.input,"sobel_v" , kernel_library["sobel_v"])
+
     else:
-        result = convolve2d_gray(img_array , kernel_library[args.kernel])
+        k_array= kernel_library[args.kernel]
+        result = convolve2d_gray(img_array, k_array)
+        result = convolve2d_gray(img_array ,k_array)
 
-
+        compare_with_opencv(args.input,args.kernel , k_array)
 
         # نمایش را حذف کنید و به جایش ذخیره کنید
     
